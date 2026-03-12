@@ -1,7 +1,7 @@
-from .bases import BoHTestBase
+from .bases import BOHTestBase
 
 
-class TestWisdomsOff(BoHTestBase):
+class TestWisdomsOff(BOHTestBase):
     options = {
         "insanitree": False,
     }

@@ -1,7 +1,7 @@
 from test.bases import WorldTestBase
 
-from ..world import BoHWorld
+from ..world import BOHWorld
 
-class BoHTestBase(WorldTestBase):
+class BOHTestBase(WorldTestBase):
     game = "Book of Hours"
-    world: BoHWorld
+    world: BOHWorld

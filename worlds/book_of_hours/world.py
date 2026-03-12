@@ -3,9 +3,10 @@ from typing import Any
 
 from worlds.AutoWorld import World
 from . import items, locations, options, regions, rules, web_world
+from .enums import BOH_StrEnums
 
 
-class BoHWorld(World):
+class BOHWorld(World):
     """
     Restore a crumbling occult library by a winter sea.
     Build the world’s foremost collection of grimoires and arcana. Master the invisible arts.
@@ -28,7 +29,7 @@ class BoHWorld(World):
     location_name_to_id = locations.LOCATION_NAME_TO_ID
     item_name_to_id = items.ITEM_NAME_TO_ID
 
-    origin_region_name = "Menu"
+    origin_region_name = BOH_StrEnums.OriginRegionName
 
     def create_regions(self) -> None:
         regions.create_and_connect_regions(self)
@@ -41,7 +42,7 @@ class BoHWorld(World):
         items.create_all_items(self)
 
     # world class must also have a create_item function
-    def create_item(self, name: str) -> items.BoHItem:
+    def create_item(self, name: str) -> items.BOHItem:
         return items.create_item_with_auto_classification(self, name)
 
     # your world *must* have at least one infinitely repeatable item (usually filler).

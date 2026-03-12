@@ -1,9 +1,9 @@
+import typing
 from dataclasses import dataclass
 
 from schema import Schema, And
 
-from Options import Choice, OptionGroup, PerGameCommonOptions, Range, Toggle, OptionDict, DefaultOnToggle, OptionSet, \
-    OptionList, OptionCounter
+from Options import Choice, PerGameCommonOptions, Range, Toggle, OptionDict, DefaultOnToggle, OptionList, OptionCounter
 from worlds.book_of_hours.locations import TERRAINS_SPECIFIC
 
 
@@ -41,11 +41,8 @@ class MemoriesAsLocations_GenericProgression(OptionCounter):
     locations: How many locations to create.
         This is a hard number and will be fulfilled.
 
-    goal: On what count will be the "goal" item.
+    goal: On what index the "goal" item will be placed.
         Must be <= locations
-
-    allow_ap_item_to_proc: If 1, items received through the multiworld count towards the checks.
-    If 0, only counts memories that were earned ingame/local.
 
     *_chance: Any memory found will be rolled against their set category-chance (see below).
         If the roll was <= chance, it will count towards progression.
@@ -71,9 +68,8 @@ class MemoriesAsLocations_GenericProgression(OptionCounter):
     """
     display_name = "Memory Progression"
     default = {
-        "locations": 10,
-        "goal": 5,
-        "allow_ap_item_to_proc": 1,
+        "locations": 40,
+        "goal": 30,
         "basics_chance": 40,
         "weathers_chance": 100,
         "weather_earthquake_chance": 100,
@@ -85,69 +81,109 @@ class MemoriesAsLocations_GenericProgression(OptionCounter):
     }
 
     def __init__(self, value: dict[str, int]):
+        pass
+        # if smth not set, use default
+        for d_key in self.default:
+            if d_key not in value:
+                value[d_key] = self.default[d_key]
+
         super().__init__(value)
 
-        chances = [True for k, v in self.default.items() if "chance" in k and 0 <= v <= 100]
-        self.is_enabled = self.default["goal"] > 0
+        self.locations = self.value["locations"]
+        self.goal = self.value["goal"]
+        self.basics_chance = self.value["basics_chance"]
+        self.weathers_chance = self.value["weathers_chance"]
+        self.weather_earthquake_chance = self.value["weather_earthquake_chance"]
+        self.weather_numa_chance = self.value["weather_numa_chance"]
+        self.lessons_chance = self.value["lessons_chance"]
+        self.musics_chance = self.value["musics_chance"]
+        self.persistents_chance = self.value["persistents_chance"]
+        self.leftovers_chance = self.value["leftovers_chance"]
 
-        non_zero = [a for a in chances if a > 0]
-        self.any_chance = len(non_zero) > 0
+        chances = [v for k, v in self.value.items() if "chance" in k and 0 < v <= 100]
+        self.any_chance = len(chances) > 0
+        self.is_enabled = self.locations > 0 and 0 < self.goal <= self.locations
 
 
-class MemoriesAsLocationsChance(Range):
+class MemoriesAsLocations_Specific(OptionDict):
     """
-    Every memory becomes its own location.
-    Rolls each memory against this chance.
-    Does not include Lessons and Weathers.
+    Earning Memories becomes a location.
+    Does not trigger if the memory was received as multiworld item.
+    Rolls each memory in that category against their chance; Will become a location if succeeded.
+    Mostly intended for either 0 or 100, but this "tunable bool"-way supports randomisation.
     """
     display_name = "MemorInsanity"
-    range_end = 100
+    default = {
+        "weather":50,
+        #"mem.,weather.ea,numa":0,
+        #"sound,persistent,@leftovers":100,
+        "lesson":100,
+    }
+
+    def __init__(self, value: dict[str, int]):
+        super().__init__(value)
+
+        chances = [v for k,v in value.items()]
+        self.is_enabled = any([True for e in chances if e > 0])
 
 
-class MemoriesAsLocationsAllowArchipelago(Toggle):
+class MemoriesAsLocations_SpecificGoals(OptionList):  # need order preserved, so not a set
     """
-    Does nothing if 'MemorInsanity' is not enabled.
-    If true, Memories received through the multiworld count for checks; This can trigger repeatedly and can speed up your playthrough.
-    If false, you have to get memories the normal way: Through 'Consider' or reading or weather.
+    Specify which memory locations become mandatory goal checks.
+    That location can not send a multiworld item, but will reward a local event item instead.
     """
-    display_name = "Allow multiworld to check location?"
+    default = [
+        # "memory:1",   enables all cards where "memory" in JsonParsed
+        #"__any>5:1",  # enables cards where "" in card and any aspect > 5
+        # "weather__all<3:1",  # searches for and enables cards that contains "weather" and all aspects < 3
+        #"arthquake,idumos,uma:0",  # searches for and disables cards that contain "arthquake" or "idumos"
+        # or "uma" (allows "Numa", "numa", "aeiouma" etc)
+        # I don't wanna check the lower/upper casing, and implicitly converting the search clause might mess things up
+    ]
+
+    def __init__(self, value: list[str]):
+        super().__init__(value)
+        non_zeros = [a for a in value if a.split(":")[1] == "1"]
+        self.is_enabled = len(non_zeros) > 0
 
 
-class MemoriesAsLocationsIncludeWeathersIncludeNuma(Toggle):
+class MemoriesAsItems(OptionDict):
     """
-    If true, Numa is a location.
-    Does nothing if 'Include Wheater' is disabled.
-    """
-    display_name = "MemorInsanity - Include Weather - Numa?"
+    Insert memories into the itempool via pattern-string.
+    ItemClassification can not be "progression" and, if received, will NOT count towards memory goals.
 
+    Pattern is "aspect__quantity(comparer)intensity__itemClassification__amountInsertedInto
+    List is applied "in order", later changes will overwrite previous setting
+    : Memory Salt is first set to filler and later set to trap, thus will be trap
 
-class MemoriesAsItems(OptionList):
-    """
-    Insert memories into the itempool, regardless of 'MemorInsanity'.
-    Can fail generation if not enough locations.
-    If "MemorInsanity" is enabled, ItemClassification will be (ignored and) forced to "Progression".
     """
     display_name = "Add Memories to itempool?"
-    verify_item_name = False  # Use own validation in 'generate_early(self)'
-    default = [
-        "any__all<2__filler__50",
-        # apply to all memories                                         __ all aspects must be < 2 __ set classification to 'filler' __ add 50 into draw-pool
-        "knock__all<4__filler__20",
-        # apply to all memories where it can find "knock"               __ all aspects must be < 4 __ set classification to 'filler' __ add 10 into draw-pool
-        "persistent__any>2__useful__5",
-        # apply to all memories where it can find "persistent"          __ any aspect  must be > 2 __ set classification to 'useful' __ add  5 into draw-pool
-        "persistent__any<3__useful__10",
-        # apply to all memories where it can find "persistent"          __ any aspect  must be < 3 __ set classification to 'useful' __ add 10 into draw-pool
-        "hindsight,salt__any>0__trap__30"
-        # apply to all memories where it can find "hindsight" OR "salt" __ any aspect  must be > 0 __ set classification to 'trap'   __ add 30 into draw-pool
-    ]
-    total = 30
+    default = {
+        "trap_chance": 50,
+        "predicates": {
+            #"__all<5": "filler",
+            # apply to all memories where "knock"               __ all aspects must be < 4 __ set classification to 'filler'
+            "hindsight,salt,regret,loss__any>0": "trap",
+            # apply to all memories where "hindsight" OR "salt" __ any aspect  must be > 0 __ set classification to 'trap'
+            "__all<2": "trap",
+        }
+    }
+
+    def __init__(self, value: typing.Dict[str, int]):
+        # if smth not set, use default
+        for d_key in self.default:
+            if d_key not in value:
+                value[d_key] = self.default[d_key]
+        super().__init__(value)
+        self.trap_chance = value["trap_chance"]
+        self.predicates = value["predicates"]
+        self.is_enabled = len(value) > 0
 
 
 # Adds everything into the draw-pool and draw {total} times.
 # The list will go from top to bottom "first-come-first-serverd; If the "memory-key" (as above, "persistent") was already processed,
 # "apply to all memories ... where it can find" :: searches the id-string, the label, and its aspects
-# Aspect "memory:1" will be ignored, since the jsondump can already provide a list with only memories
+# Aspect "memory:1" will always be true / return all memories
 # any>0 is a formality so that I can make a generic '[any|all] [<|>] int' pattern
 
 
@@ -423,7 +459,7 @@ class SkillAsLocationChance(Range):
 # generate the room choices cuz I ain't typing 110 lines by hand
 rooms = {f"option_{k}"
          : v
-         for k,v in TERRAINS_SPECIFIC.items()}
+         for k, v in TERRAINS_SPECIFIC.items()}
 rooms = {k: v for k, v in rooms.items() if "brancrug" not in k}
 
 RoomGoal = type("RoomGoal", (Choice,), {
@@ -437,6 +473,13 @@ RoomGoal = type("RoomGoal", (Choice,), {
 del rooms
 
 
+class Memorinsanity(Toggle):
+    display_name = "aaaaa"
+
+
 @dataclass
 class BoHOptions(PerGameCommonOptions):
     memory_progression: MemoriesAsLocations_GenericProgression
+    memorinsanity: MemoriesAsLocations_Specific
+    memorinsanity_goals: MemoriesAsLocations_SpecificGoals
+    memory_items: MemoriesAsItems

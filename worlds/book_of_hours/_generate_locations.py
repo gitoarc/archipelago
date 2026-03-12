@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING
 
 from . import jsondump
+from .functions import slice_off_category_from_int, starts_vowel
 
 
 def __process_label_memory(s: str):
@@ -29,26 +29,24 @@ def __process_label_lesson(s: str):
     return s
 
 
-def __slice_off_category(i: int):
-    s = str(i)
-    s = s[2:]
-    return int(s)
-
-
 def __last_subid_of(d: dict[any, int]):
     i = max(d.values())
-    i = __slice_off_category(i)
+    i = slice_off_category_from_int(i)
     return i
 
 
 #################
-MEMORIES_SPECIFIC = {f"Remember a {o.Label}": int(f"10{i + 1}")
+MEMORIES_SPECIFIC = {f"Remember an {o.Label}" if starts_vowel(o.Label) else f"Remember a {o.Label}"
+                     : int(f"10{i + 1}")
                      for i, o in enumerate(jsondump.memories)}
 # I would've liked to create these dependant on the options, BUT location_name_to_id IS STATIC -> even generate_early is too late, this HAS to be set before AP calls BoHWorld, but then I don't have the option values...
-MEMORIES_PILE = {f"Remember {i} memory" if i == 1 else f"Remember {i} memories"
-                 : int(f"10{__last_subid_of(MEMORIES_SPECIFIC) + i}")
-                 for i in range(1, 333)}
-MEMORIES_PILE["Goal - Remember Memories"] = __last_subid_of(MEMORIES_PILE) + 1
+#MEMORIES_PILE = {f"Remember {x} memories - Reward {y}"
+#                 : int(f"10{__last_subid_of(MEMORIES_SPECIFIC) + 1+i}")
+#                 for i, (x, y) in enumerate([(a, b) for a in range(1, 1 + 333) for b in range(1, 1 + 3)])
+#                 }
+MEMORIES_PILE = {f"Remember {m} memories"
+                 : int(f"10{__last_subid_of(MEMORIES_SPECIFIC) + m}")
+                 for m in range(1, 1 + 333)}
 ##############
 SOULS_SPECIFIC = {f"Acquire {o.Label}": int(f"20{i + 1}")
                   for i, o in enumerate(jsondump.souls)}
@@ -109,10 +107,10 @@ CATALOG_PILE_NOCTURNAL = {
 ################ I think skills are better for locations since you can use lessons as memories:
 # If you want a skill location you have to use up the lesson
 # ..and since books do/will reward (random) lessons after mastering, it would just be a double location for mastery (in a sense)
-LESSONS_SPECIFIC = {}
-LESSONS_PILE = {}
+#LESSONS_SPECIFIC = {}
+#LESSONS_PILE = {}
 ###############
-SKILLS_SPECIFIC = {f"Learn '{o.Label}'": int(f"70{i + 1}")
+SKILLS_SPECIFIC = {f"Learn the skill '{o.Label}'": int(f"70{i + 1}")
                    for i, o in enumerate(jsondump.skills)}
 SKILLS_PILE = {f"Learn {i} skill" if i == 1 else f"Learn {i} skills"
                : int(f"70{__last_subid_of(SKILLS_SPECIFIC) + i}")
