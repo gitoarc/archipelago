@@ -159,12 +159,10 @@ class MemoriesAsItems(OptionDict):
     """
     display_name = "Add Memories to itempool?"
     default = {
-        "trap_chance": 50,
+        "downgrade_trap_chance": 50,
         "predicates": {
-            #"__all<5": "filler",
-            # apply to all memories where "knock"               __ all aspects must be < 4 __ set classification to 'filler'
-            "hindsight,salt,regret,loss__any>0": "trap",
-            # apply to all memories where "hindsight" OR "salt" __ any aspect  must be > 0 __ set classification to 'trap'
+            # "__all<5": "filler",                          # apply to all memories where "knock"               __ all aspects must be < 4 __ set classification to 'filler'
+            "hindsight,salt,regret,loss__any>0": "trap",    # apply to all memories where "hindsight" OR "salt" __ any aspect  must be > 0 __ set classification to 'trap'
             "__all<2": "trap",
         }
     }

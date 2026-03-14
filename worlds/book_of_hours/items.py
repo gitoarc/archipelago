@@ -44,9 +44,6 @@ class BOHItem(Item):
     game = "Book of Hours"
 
 
-# Ontop of our regular itempool, our world must be able to create arbitrary amounts of filler as requested by core.
-# To do this, it must define a function called world.get_filler_item_name(), which we will define in world.py later.
-# For now, let's make a function that returns the name of a random filler item here in items.py.
 def get_random_filler_item_name(world: BOHWorld) -> str:
     # IMPORTANT: Whenever you need to use a random generator, you must use world.random.
     # This ensures that generating with the same generator seed twice yields the same output.
@@ -60,7 +57,7 @@ def get_random_filler_item_name(world: BOHWorld) -> str:
 
     chosen_item_name = fillers_and_traps[index_roll_fillers_and_traps]
     # find out what kind of item and apply its trap_chance
-    if chosen_item_name in [a.Label for a in memories+lessons] and chance_roll < world.options.memory_items.trap_chance:
+    if chosen_item_name in [a.Label for a in memories+lessons] and chance_roll < world.options.memory_items.downgrade_trap_chance:
         chosen_item_name = traps_only[index_roll_traps]
     pass
 
