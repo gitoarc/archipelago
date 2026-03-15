@@ -14,7 +14,9 @@ if TYPE_CHECKING:
 # We will have a lookup from item name to ID here that, in world.py, we will import and bind to the world class.
 # ! Even if an item doesn't exist on specific options, it must be present in this lookup.
 ITEM_NAME_TO_ID = {
-    "Hush House Key": 102,
+    "Fisherman's Assistance": 101,  # "assistance.fisherman.intro"
+    "An Old Friend's Address": 102, # "introduction.**.start" (yes, all 4 starts have same Label)
+    "Hush House Key": 103,
     "Twopence": 202
 }
 MEMORIES_NAME_TO_ID = {m.Label: v
@@ -22,12 +24,13 @@ MEMORIES_NAME_TO_ID = {m.Label: v
                        for k, v in MEMORIES_SPECIFIC.items()
                        if m.Label in k}
 # make lessons part of memories (bc they are) but also, they have kinda weak existence for being their own category
-LESSONS = {o.Label:f"60{i}" for i, o in enumerate(lessons)}
-MEMORIES_NAME_TO_ID = MEMORIES_NAME_TO_ID | LESSONS
+MEMORIES_NAME_TO_ID = MEMORIES_NAME_TO_ID | {o.Label:f"60{i}" for i, o in enumerate(lessons)}
 #LOCATION_AS_EVENT_ITEM = {e.Label: None for e in terrains}
 
 
 DEFAULT_ITEM_CLASSIFICATIONS = {
+    "Fisherman's Assistance": ItemClassification.progression | ItemClassification.useful,
+    "An Old Friend's Address": ItemClassification.progression | ItemClassification.useful,
     "Hush House Key": ItemClassification.progression | ItemClassification.useful,
     "Twopence": ItemClassification.filler
 }

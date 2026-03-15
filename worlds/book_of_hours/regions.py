@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import Utils
-from BaseClasses import Region, EntranceType
+from BaseClasses import Region, EntranceType, CollectionState
 from .enums import BOH_StrEnums
 from .jsondump import terrains, wisdomtree
 from typing import TYPE_CHECKING
@@ -34,7 +34,7 @@ def create_all_regions(world: BOHWorld) -> None:
 
     # Souls are part of WisdomTree IN VANILLA, idk yet how/if randomiser can/will affect this
     if False:
-        region_names.add("The Tree of Wisdoms")
+        region_names.add(BOH_StrEnums.TreeOfWisdoms)
     # Terrains
 
     if world.options.insanitree:
@@ -47,34 +47,42 @@ def create_all_regions(world: BOHWorld) -> None:
 
 def connect_regions(world: BOHWorld) -> None:
     origin_region = world.get_region(BOH_StrEnums.OriginRegionName)
-    all_regions = world.get_regions()
-    start_name = BOH_StrEnums.StBrandansCove
-    origin_region.connect(world.get_region(start_name),
-                                     f"Menu -> {start_name}")
+    cove = world.get_region(BOH_StrEnums.StBrandansCove)
+    village = world.get_region(BOH_StrEnums.BrancrugVillage)
+    bridge = world.get_region(BOH_StrEnums.CucurbitBridge)
+    lodge = world.get_region(BOH_StrEnums.KeepersLodge)
+    gatehouse = world.get_region(BOH_StrEnums.WatchmansTowerGatehouse)
 
-    wt = [a for a in world.get_regions() if a.name == "The Tree of Wisdoms"]
-    if len(wt) == 1:
-        origin_region.connect(wt[0], f"Menu -> The Tree of Wisdoms")
+    origin_region.connect(world.get_region(BOH_StrEnums.StBrandansCove)) # Vanilla spawn, but has no lcoations and thus no progression possible
+    origin_region.connect(world.get_region(BOH_StrEnums.KeepersLodge))  # Mod spawn; Could be made random?
+
+    # Manually set connections up until Gatehouse for better overview
+    cove.connect(village, rule=lambda state: state.has(BOH_StrEnums.FishermanAssistance, world.player) and state.has(BOH_StrEnums.VillageFriend, world.player))
+    village.connect(bridge, rule=lambda state:state.has(BOH_StrEnums.VillageFriend, world.player))
+    bridge.connect(lodge)       # "needs assistance" handled by previous' region VillageFriend rule (and implicitly applied to all following rules (which fits just right
+    lodge.connect(gatehouse)
+
     # Terrain connections
-    unhandled: list[str] = [start_name]
-    done: list[str] = []
-    while len(unhandled) > 0:
-        currentName = unhandled[0]
-        #add self -> others connectors
-        region = world.get_region(currentName)
-        nexts = [connection.Label for t in terrains for connection in t.ConnectsTo if t.Label == currentName]
-        n: str
-        for n in nexts:
-            # do NOT add a -> b -> a connections; it clutters the logic, methinks
-            exist_in_world = len([a for a in all_regions if n in a.name]) == 1
-            if exist_in_world and n not in done:
-                x = region.connect(world.get_region(n), f"{currentName} -> {n}", None)  #set in rules.py
-                x.randomization_type = EntranceType.TWO_WAY
-                if n not in unhandled:
-                    unhandled.append(n)
+    if False:
+        unhandled: list[str] = [start_name]
+        done: list[str] = []
+        while len(unhandled) > 0:
+            currentName = unhandled[0]
+            #add self -> others connectors
+            region = world.get_region(currentName)
+            nexts = [connection.Label for t in terrains for connection in t.ConnectsTo if t.Label == currentName]
+            n: str
+            for n in nexts:
+                # do NOT add a -> b -> a connections; it clutters the logic, methinks
+                exist_in_world = len([a for a in all_regions if n in a.name]) == 1
+                if exist_in_world and n not in done:
+                    x = region.connect(world.get_region(n), f"{currentName} -> {n}", None)  #set in rules.py
+                    x.randomization_type = EntranceType.TWO_WAY
+                    if n not in unhandled:
+                        unhandled.append(n)
 
-        done.append(currentName)
-        unhandled.remove(currentName)
+            done.append(currentName)
+            unhandled.remove(currentName)
 
     if world.options.insanitree:
         wt = world.get_region(BOH_StrEnums.TreeOfWisdoms)

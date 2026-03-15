@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from BaseClasses import Location, ItemClassification, CollectionState
+from BaseClasses import Location, ItemClassification, CollectionState, LocationProgressType
 from . import items, enums
-from .enums import BOH_StrEnums
 from ._generate_locations import *
-from .functions import predicate_with
+from .enums import BOH_StrEnums
+from .functions import predicate_with, int_from_roman_in_wt_node
 from .items import BOHItem
 from .jsondump import terrains, JsonParsed, memories, SimplePredicate, lessons, everything
 
@@ -46,8 +46,6 @@ def create_all_locations(world: BOHWorld) -> None:
     create_events(world)
 
 
-
-
 def create_locations_memory_progression(world: BOHWorld) -> None:
     menu = world.get_region("Menu")
     locations_wanted: int = world.options.memory_progression["locations"]
@@ -64,26 +62,31 @@ def create_locations_memory_progression(world: BOHWorld) -> None:
     menu.add_locations(locs, BOHLocation)
     # placing goal item transforms the location to event, check create_events()
 
+
 def create_locations_memorinsanity(world: BOHWorld) -> None:
     #assume this runs AFTER create_locations_memorinsanity_goals() "might" have added locations
     origin_region = world.get_region(BOH_StrEnums.OriginRegionName)
-    world_locs = {l.name:l.address for l in world.get_locations()}
+    world_locs = {l.name: l.address for l in world.get_locations()}
     options = dict(world.options.memorinsanity.value)
-    for k,v in options.items():
-        jsons = [a for a in memories+lessons if a.contains_substr(k)]
-        locs = {k:v for k,v in MEMORIES_SPECIFIC.items() for j in jsons if j.Label in k }
+    for loc_substr_wildcard, loc_chance in options.items():
+        jsons = [a for a in memories + lessons if a.contains_substr(loc_substr_wildcard)]
+        locs = {k: v for k, v in MEMORIES_SPECIFIC.items() for j in jsons if j.Label in k and not k.split(j.Label)[1]}
+        # Just bc of "Earthquake" allowing "Earthquake Name"
+        # If theres stuff after removing the label, do not pass it
         for lk, lv in locs.items():
             if lk in world_locs:
                 pass
             else:
-                origin_region.locations.append(BOHLocation(world.player,lk,lv,origin_region))
-    wanteds = [a.Label for a in everything for o in options if a.contains_substr(o)]
+                if world.random.randint(0, 100) < loc_chance:
+                    origin_region.locations.append(BOHLocation(world.player, lk, lv, origin_region))
+    pass
+
 
 def create_locations_memorinsanity_goals(world: BOHWorld):
     op = world.options.memorinsanity_goals
-    s:str
+    s: str
     # first, accumulate the enabled locs
-    dumped_loc_names:set[str] = set()
+    dumped_loc_names: set[str] = set()
     for s in op:
         filterstring = s.split(":")[0]
         add = s.split(":")[1] == "1"
@@ -99,12 +102,12 @@ def create_locations_memorinsanity_goals(world: BOHWorld):
             dumped_loc_names -= jl
     pass
     # ...then, translate the list[str] to BOHLocations
-    aa = {k:v for k,v in MEMORIES_SPECIFIC.items()
+    aa = {k: v for k, v in MEMORIES_SPECIFIC.items()
           for name in dumped_loc_names
           if name in k}
     # ...and add to world
     origin_region = world.get_region(BOH_StrEnums.OriginRegionName)
-    for k,v in aa.items():
+    for k, v in aa.items():
         loc = BOHLocation(world.player, k, None, origin_region)
         loc.place_locked_item(BOHItem("Victory Shard", ItemClassification.progression, None, world.player))
         origin_region.locations.append(loc)
@@ -169,52 +172,24 @@ def create_locations(world: BOHWorld) -> None:
 
 
 def create_events(world: BOHWorld) -> None:
-    menu = world.get_region("Menu")
+    origin_region = world.get_region(BOH_StrEnums.OriginRegionName)
     village = world.get_region(BOH_StrEnums.BrancrugVillage)
-    lodge = world.get_region(BOH_StrEnums.KeepersLodge)
 
     # unlocking the village is not enough to unlock assistance and journal
-    acquaint = BOHLocation(world.player, BOH_StrEnums.VillageAcquaintance, None, village)
-    acquaint.place_locked_item(BOHItem(BOH_StrEnums.VillageAcquaintance, ItemClassification.progression, None, world.player))
-    village.add_event(BOH_StrEnums.VillageAcquaintance, BOH_StrEnums.VillageAcquaintance,
+    acquaint = BOHLocation(world.player, BOH_StrEnums.VillageFriend, None, village)
+    acquaint.place_locked_item(
+        BOHItem(BOH_StrEnums.VillageFriend, ItemClassification.progression, None, world.player))
+    village.add_event(BOH_StrEnums.VillageFriend, BOH_StrEnums.VillageFriend,
                       None,
                       BOHLocation, BOHItem, False)
-    #theoretically any "library.fireplace.*" workstation works, but Village is the earliest, and RoomRando is not really possible until post-village (NO way to get assistance)
-    village.add_event(BOH_StrEnums.DriedJournal, BOH_StrEnums.DriedJournal,
-                      lambda state: state.has(BOH_StrEnums.VillageAcquaintance, world.player),
-                      BOHLocation, BOHItem, False)
-    # static goal (just testing Hush Key rules)
-    r = world.get_region(BOH_StrEnums.WatchmansTowerGatehouse)
-    r.locations.append(BOHLocation(world.player, "Entered the House proper", None, lodge))
-    r.locations[0].place_locked_item(BOHItem("Victory Shard", ItemClassification.progression, None, world.player))
-    world.set_rule(r.locations[0], lambda state: state.has("Hush House Key", world.player))
+    #theoretically any "library.fireplace.*" workstation works; not just village
+    # use def() to find all rooms with a fireplace?
+    origin_region.add_event(BOH_StrEnums.DriedJournal, BOH_StrEnums.DriedJournal,
+                            lambda state: state.has(BOH_StrEnums.VillageFriend, world.player),
+                            BOHLocation, BOHItem, False)
 
     if world.options.memory_progression.is_enabled:
         # place goal item at X
         loc = world.get_location(f"Remember {world.options.memory_progression.goal} memories")
         loc.address = None
         loc.place_locked_item(BOHItem("Victory Shard", ItemClassification.progression, None, world.player))
-
-    if False:  #wisdom tree
-        wt = world.get_region("The Tree of Wisdoms")
-
-        l = [a for a in jsondump.wisdomtree if "locus" not in a.IdStr]
-        _root = [a for a in jsondump.wisdomtree if a.IdStr == "wt.memorylocus"][0]
-
-        wt.add_event("__event_wt.memorylocus", "__event_wt.memorylocus",
-                     lambda state: state.can_reach_region("The Tree of Wisdoms", world.player), BOHLocation, BOHItem)
-        for i in range(0, 9):  # == 9 paths
-            _current_idstr = l[0].IdStr[:-1]
-            _all_of_path = [a for a in l if _current_idstr in a.IdStr]
-            assert len(_all_of_path) == 9
-            e = [a for a in _all_of_path if ".1" in a.IdStr][0]
-            l.remove(e)
-            wt.add_event("__event_" + e.IdStr, "__event_" + e.IdStr,
-                         lambda state: state.has("__event_wt.memorylocus", world.player), BOHLocation, BOHItem)
-            for j in range(1 + 1, 1 + 9):
-                e_next = [a for a in _all_of_path if str(j) in a.IdStr][0]
-                l.remove(e_next)
-                wt.add_event("__event_" + e_next.IdStr, "__event_" + e_next.IdStr,
-                             lambda state, s="__event_" + e.IdStr: state.has(s, world.player), BOHLocation, BOHItem)
-                e = e_next
-        assert len(l) == 0

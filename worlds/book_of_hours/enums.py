@@ -2,7 +2,8 @@ from enum import StrEnum, unique
 
 @unique
 class BOH_StrEnums(StrEnum):
-    VillageAcquaintance = "Brancrug Village Acquaintance"
+    FishermanAssistance = "Fisherman's Assistance"
+    VillageFriend = "An Old Friend's Address"
     DriedJournal = "Dried Journal"
     EventItem_MemoryProgression = "event_memories_collected"
     OriginRegionName = "Menu"

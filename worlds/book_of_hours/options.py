@@ -117,13 +117,12 @@ class MemoriesAsLocations_Specific(OptionDict):
         "weather":50,
         #"mem.,weather.ea,numa":0,
         #"sound,persistent,@leftovers":100,
-        "lesson":100,
     }
 
     def __init__(self, value: dict[str, int]):
         super().__init__(value)
 
-        chances = [v for k,v in value.items()]
+        chances = [v for k, v in value.items()]
         self.is_enabled = any([True for e in chances if e > 0])
 
 
@@ -134,9 +133,9 @@ class MemoriesAsLocations_SpecificGoals(OptionList):  # need order preserved, so
     """
     default = [
         # "memory:1",   enables all cards where "memory" in JsonParsed
-        #"__any>5:1",  # enables cards where "" in card and any aspect > 5
+        # "__any>5:1",  # enables cards where "" in card and any aspect > 5
         # "weather__all<3:1",  # searches for and enables cards that contains "weather" and all aspects < 3
-        #"arthquake,idumos,uma:0",  # searches for and disables cards that contain "arthquake" or "idumos"
+        # "arthquake,idumos,uma:0",  # searches for and disables cards that contain "arthquake" or "idumos"
         # or "uma" (allows "Numa", "numa", "aeiouma" etc)
         # I don't wanna check the lower/upper casing, and implicitly converting the search clause might mess things up
     ]
@@ -154,8 +153,6 @@ class MemoriesAsItems(OptionDict):
 
     Pattern is "aspect__quantity(comparer)intensity__itemClassification__amountInsertedInto
     List is applied "in order", later changes will overwrite previous setting
-    : Memory Salt is first set to filler and later set to trap, thus will be trap
-
     """
     display_name = "Add Memories to itempool?"
     default = {
@@ -173,7 +170,7 @@ class MemoriesAsItems(OptionDict):
             if d_key not in value:
                 value[d_key] = self.default[d_key]
         super().__init__(value)
-        self.trap_chance = value["trap_chance"]
+        self.downgrade_trap_chance = value["downgrade_trap_chance"]
         self.predicates = value["predicates"]
         self.is_enabled = len(value) > 0
 
