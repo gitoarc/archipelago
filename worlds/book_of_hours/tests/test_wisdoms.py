@@ -1,11 +1,13 @@
+from BaseClasses import Location, LocationProgressType
 from .bases import BOHTestBase
 from ..enums import BOH_StrEnums
+from ..functions import int_from_roman_in_wt_node
 
 
 class TestWisdoms_Off(BOHTestBase):
     options = {
         "insanitree": {
-            "from_tier": 1,
+            "from_tier": 0,
             "to_tier": 0,
             "split_paths": 1
         }
@@ -18,7 +20,8 @@ class TestWisdoms_0to9_Split(BOHTestBase):
         "insanitree": {
             "from_tier": 0,
             "to_tier": 9,
-            "split_paths": 1
+            "split_paths": 1,
+            "location_progress_types": 1232123231,
         }
     }
 
@@ -27,6 +30,21 @@ class TestWisdoms_0to9_Split(BOHTestBase):
         loc = [a for a in reg.locations]
         self.assertTrue(len(loc) == 1 + 9 * 9,
                         f"expected {1 + 9 * 9} locations, but found {len(loc)}")  # Root node + 9 slots * 9 paths
+
+    def test_loc_types(self):
+        assert self.world.options.insanitree.location_progress_types
+        reg = self.world.get_region(BOH_StrEnums.TreeOfWisdoms)
+        locs:list[Location] = [a for a in reg.locations]
+        for i in range(1,10):
+            t_locs = [a for a in locs if int_from_roman_in_wt_node(a.name) == i]
+            for l in t_locs:
+                expected = int(self.world.options.insanitree.location_progress_types[i])
+                expected = LocationProgressType(expected)
+                self.assertTrue(l.progress_type == expected)
+                locs.remove(l)
+        [root] = locs
+        self.assertTrue(root.progress_type == LocationProgressType(int(self.world.options.insanitree.location_progress_types[0])))
+        pass
 
 
 class TestWisdoms_1to3_Split(BOHTestBase):

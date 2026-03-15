@@ -125,8 +125,8 @@ def create_locations_wisdoms(world: BOHWorld) -> None:
         else:
             dic = WISDOMS_SPECIFIC if world.options.insanitree.split_paths else WISDOMS_TIERS
             locs = {k: v for k, v in dic.items() if int_from_roman_in_wt_node(k) == i}
-        loc_type_str = world.options.insanitree.location_progress_types[i]
-        loc_type = LocationProgressType(int(loc_type_str))
+        loc_type = world.options.insanitree.location_progress_types[i]
+        loc_type = LocationProgressType(int(loc_type))
         for k, v in locs.items():
             wt.locations.append(BOHLocation(world.player, k, v, wt))
             wt.locations[-1].progress_type = loc_type

@@ -114,7 +114,7 @@ class MemoriesAsLocations_Specific(OptionDict):
     """
     display_name = "MemorInsanity"
     default = {
-        "weather":50,
+        "weather":00,
         #"mem.,weather.ea,numa":0,
         #"sound,persistent,@leftovers":100,
     }
@@ -272,12 +272,13 @@ class TreeOfWisdoms(OptionDict):
     Expects the range to be
      0 <= from_tier <= to_tier <= 9;  Tier 0 is the Journal-Slot.
 
-    'location_progress_types' expects a 10 length string and sets the LocationType of the corresponding index;
-    Example str="2213333333":
-        str[0] (Tier 0) = 2 : The Journal-Slot is forced to have a progression item.
-        str[1] (Tier 1) = 2 : All "I" slots are forced to have a progression item.
-        str[2] (Tier 2) = 1 : All "II" slots have default item rule.
-        str[3] (Tier 3) = 3 : All "III" slots will not have progression items.
+    'location_progress_types' expects a 10 digit int and sets the LocationType of the corresponding index;
+    Example 2213333333:
+        1st digit = Tier 0 = 2 : The Journal-Slot is forced to have a progression item.
+        2nd digit = Tier 1 = 2 : All "I" slots are forced to have a progression item.
+        3rd digit = Tier 2 = 1 : All "II" slots have default item rule.
+        4th digit = Tier 3 = 3 : All "III" slots will not have progression items.
+        etcetera
 
     If 'split_paths' == 0, uses "Commit to any Tier X" locations.
     If 'split_paths' == 1, every node of every path becomes a location.
@@ -288,8 +289,8 @@ class TreeOfWisdoms(OptionDict):
     default = {
         "from_tier": 0,
         "to_tier": 9,
-        "location_progress_types": "2222111333",
-        "split_paths": 0
+        "location_progress_types": 2221333333,
+        "split_paths": 1
     }
 
     def __init__(self, value: typing.Dict[str, int]):
@@ -300,8 +301,11 @@ class TreeOfWisdoms(OptionDict):
         super().__init__(value)
         self.from_ = value["from_tier"]
         self.to = value["to_tier"]
-        self.location_progress_types = value["location_progress_types"]
+        self.location_progress_types = str(value["location_progress_types"])
         self.split_paths = value["split_paths"] == 1
+        if (len(self.location_progress_types) != 10
+                or not 0 <= self.from_ <= self.to <= 9):
+            raise ValueError("Option Insanitree has invalid values! Plx fiz")
 
     def __bool__(self):
         return 0 <= self.from_ <= self.to <= 9
