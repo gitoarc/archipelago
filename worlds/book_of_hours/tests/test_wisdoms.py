@@ -1,16 +1,59 @@
 from .bases import BOHTestBase
+from ..enums import BOH_StrEnums
 
 
-class TestWisdomsOff(BOHTestBase):
+class TestWisdoms_Off(BOHTestBase):
     options = {
-        "insanitree": False,
+        "insanitree": {
+            "from_tier": 1,
+            "to_tier": 0,
+            "split_paths": 1
+        }
     }
 
-    # Once again, this is just default settings, so running the default tests would be wasteful.
-    run_default_tests = False
 
-    # The hammer option adds the Hammer item to the itempool.
-    # Since the hammer option is off in this TestCase, we have to verify that the Hammer is *not* in the itempool.
-    def test_wisdom_events_dont_exist(self) -> None:
-        items_in_itempool = self.get_items_by_name("Wisdoms:")
-        #self.assertEqual(len(items_in_itempool), 0)
+class TestWisdoms_0to9_Split(BOHTestBase):
+    run_default_tests = False
+    options = {
+        "insanitree": {
+            "from_tier": 0,
+            "to_tier": 9,
+            "split_paths": 1
+        }
+    }
+
+    def test_len_locations_is_82(self):
+        reg = self.world.get_region(BOH_StrEnums.TreeOfWisdoms)
+        loc = [a for a in reg.locations]
+        self.assertTrue(len(loc) == 1 + 9 * 9,
+                        f"expected {1 + 9 * 9} locations, but found {len(loc)}")  # Root node + 9 slots * 9 paths
+
+
+class TestWisdoms_1to3_Split(BOHTestBase):
+    run_default_tests = False
+    options = {
+        "insanitree": {
+            "from_tier": 1,
+            "to_tier": 3,
+            "split_paths": 1
+        }
+    }
+
+    def test_len_locations(self):
+        reg = self.world.get_region(BOH_StrEnums.TreeOfWisdoms)
+        loc = [a for a in reg.locations]
+        self.assertTrue(len(loc) == 3 * 9, f"expected {1 * 3 * 9} locations, but found {len(loc)}: {loc}")
+
+class TestWisdoms_0To9_NoSplit(BOHTestBase):
+    run_default_tests = False
+    options = {
+        "insanitree": {
+            "from_tier": 0,
+            "to_tier": 9,
+            "split_paths": 0
+        }
+    }
+    def test_len_locations_is_10(self):
+        reg = self.world.get_region(BOH_StrEnums.TreeOfWisdoms)
+        loc:list = [a for a in reg.locations]
+        self.assertTrue(len(loc) == 10, f"expected 10 locations, but found {len(loc)}: {loc}")

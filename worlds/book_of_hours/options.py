@@ -268,21 +268,46 @@ class TerrainsConnectRandomConsideration(Choice):
     option_no = 2
 
 
-class TreeOfWisdoms(Toggle):
+class TreeOfWisdoms(OptionDict):
     """
-    Add the Tree of Wisdoms and a general progression 'Level 1 to 9' as location.
-    Adds 10 locations.
+    Add up 82 locations to The Tree of Wisdoms and its many nodes.
+
+    Expects the range to be
+     0 <= from_tier <= to_tier <= 9;  Tier 0 is the Journal-Slot.
+
+    'location_progress_types' expects a 10 length string and sets the LocationType of the corresponding index;
+    Example str="2213333333":
+        str[0] (Tier 0) = 2 : The Journal-Slot is forced to have a progression item.
+        str[1] (Tier 1) = 2 : All "I" slots are forced to have a progression item.
+        str[2] (Tier 2) = 1 : All "II" slots have default item rule.
+        str[3] (Tier 3) = 3 : All "III" slots will not have progression items.
+
+    If 'split_paths' == 0, uses "Commit to any Tier X" locations.
+    If 'split_paths' == 1, every node of every path becomes a location.
+
+    Can cause generation to fail if you try to place too many prog items.
     """
     display_name = "InsaniTree of Wisdoms"
+    default = {
+        "from_tier": 0,
+        "to_tier": 9,
+        "location_progress_types": "2222111333",
+        "split_paths": 0
+    }
 
+    def __init__(self, value: typing.Dict[str, int]):
+        # if smth not set, use default
+        for d_key in self.default:
+            if d_key not in value:
+                value[d_key] = self.default[d_key]
+        super().__init__(value)
+        self.from_ = value["from_tier"]
+        self.to = value["to_tier"]
+        self.location_progress_types = value["location_progress_types"]
+        self.split_paths = value["split_paths"] == 1
 
-class TreeOfWisdomsSplit(Toggle):
-    """
-    Every Path of the Tree gets its own progressive locations.
-    Does nothing if 'InsaniTree of Wisdoms' is disabled.
-    Increases the previous 10 locations to 82.
-    """
-    display_name = "Split Wisdoms"
+    def __bool__(self):
+        return 0 <= self.from_ <= self.to <= 9
 
 
 class Books(DefaultOnToggle):
@@ -481,3 +506,4 @@ class BoHOptions(PerGameCommonOptions):
     memorinsanity: MemoriesAsLocations_Specific
     memorinsanity_goals: MemoriesAsLocations_SpecificGoals
     memory_items: MemoriesAsItems
+    insanitree: TreeOfWisdoms

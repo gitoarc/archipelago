@@ -6,7 +6,7 @@ class BOH_StrEnums(StrEnum):
     DriedJournal = "Dried Journal"
     EventItem_MemoryProgression = "event_memories_collected"
     OriginRegionName = "Menu"
-    #Terrains
+    ### Terrains
     Atrium = "Atrium"
     BackStairs = "Back Stairs"
     DuellingHall = "Duelling Hall"
@@ -117,3 +117,6 @@ class BOH_StrEnums(StrEnum):
     WhisperingStair = "Whispering Stair"
     WindlitGallery = "Windlit Gallery"
     WineCellar = "Wine Cellar"
+    ### Tree of Wisdoms
+    TreeOfWisdoms = "Tree of Wisdoms"
+    TreeOfWisdoms_Root = "The Roots of Memory"

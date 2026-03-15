@@ -20,10 +20,10 @@ def create_and_connect_regions(world: BOHWorld) -> None:
 
 
 def create_all_regions(world: BOHWorld) -> None:
-    region_names = {BOH_StrEnums.OriginRegionName}
+    region_names:set[str] = {BOH_StrEnums.OriginRegionName}
 
-    # Independant of options bc of some dependencies (WisdomTree requires Village...) and its easier for my assignments if I know they always exist;
-    # If no option needs a region I can just not spawn the locations
+    # Independant of options bc of some dependencies (Assistants only post-village possible...) and its easier for my assignments if I know they always exist;
+    # If no option causes a region I can just not spawn the locations
     guaranteed_regions = [a for a in terrains if a.Label in [BOH_StrEnums.StBrandansCove.value, BOH_StrEnums.BrancrugVillage.value,
                                                              BOH_StrEnums.CucurbitBridge.value, BOH_StrEnums.KeepersLodge.value,
                                                              BOH_StrEnums.WatchmansTowerGatehouse.value]]
@@ -32,13 +32,14 @@ def create_all_regions(world: BOHWorld) -> None:
 
     # Memories can not really be categorised into Regions imo
 
-    # Souls are part of WisdomTree IN VANILLA, idk how/if randomiser can/will affect this
+    # Souls are part of WisdomTree IN VANILLA, idk yet how/if randomiser can/will affect this
     if False:
         region_names.add("The Tree of Wisdoms")
     # Terrains
-    # world.options.wisdomtree
-    if False:
-        region_names.add("The Tree of Wisdoms")
+
+    if world.options.insanitree:
+        # because of 'region_names' being a Set, I don't have to check "if exists, do not add"
+        region_names.add(BOH_StrEnums.TreeOfWisdoms)
 
     regions = [Region(name, world.player, world.multiworld) for name in region_names]
     world.multiworld.regions += regions
@@ -75,26 +76,7 @@ def connect_regions(world: BOHWorld) -> None:
         done.append(currentName)
         unhandled.remove(currentName)
 
-    if False:
-        o = world.options.room_goal == RoomGoal.option_lodge
-        wt = [e for e in world.get_regions() if "Wisdoms:" in e.name]
-        cache1 = [w for w in wt if "1" in w.name]
-        match = next((x for x in wt if "1" in x.name), False)
-        # assigns the 1-2, 2-3 ... 8-9 of the paths
-        while match:
-            nex = match.name[:-2]
-            for level in range(1, 9):
-                lvl_region = [e for e in wt if e.name == f"{nex} {level}"][0]
-                next_lvl_region = [e for e in wt if e.name == f"{nex} {level + 1}"][0]
-                lvl_region.connect(next_lvl_region, f"{lvl_region.name} -> {next_lvl_region.name}", None)
-                wt.remove(lvl_region)
-            match = next((x for x in wt if "1" in x.name), False)
-        # remove lv9
-        wt = [w for w in wt if "9" not in w.name]
-        # the Root HAS to be the only one left
-        root = wt[0]
-        for i in cache1:
-            root.connect(i, f"{root.name} -> {i.name}", None)
-        #
-        world.get_region(BOH_StrEnums.BrancrugVillage).connect(root, f"{1} -> {1}", None)
-        pass
+    if world.options.insanitree:
+        wt = world.get_region(BOH_StrEnums.TreeOfWisdoms)
+        # Bc any fireplace can dry the book, village is technically not a hard requirement
+        origin_region.connect(wt)

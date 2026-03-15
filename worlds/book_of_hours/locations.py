@@ -111,16 +111,23 @@ def create_locations_memorinsanity_goals(world: BOHWorld):
 
 
 def create_locations_wisdoms(world: BOHWorld) -> None:
-    if False:
-        wt = world.get_region("The Tree of Wisdoms")
-        reward_per_new_tier = 1
-        reward_per_accum_progression = 1
-        allowed_tiers_for_node_locations = "012"
-        rewards_per_tier_reached = "012000000"
-        rewards_per_node_location = "023000000"
-        wt.add_locations({k: v for k, v in WISDOMS_PILE.items()}, BOHLocation)
-        wt.add_locations({k: v for k, v in WISDOMS_TIERS.items()}, BOHLocation)
-        wt.add_locations({k: v for k, v in WISDOMS_SPECIFIC.items()}, BOHLocation)
+    origin_region = world.get_region(BOH_StrEnums.OriginRegionName)
+    wt = world.get_region(BOH_StrEnums.TreeOfWisdoms)
+
+    #wt.add_locations({k: v for k, v in WISDOMS_PILE.items()}, BOHLocation)
+    #wt.add_locations({k: v for k, v in WISDOMS_TIERS.items()}, BOHLocation)
+    for i in range(world.options.insanitree.from_, 1 + world.options.insanitree.to):
+        if i == 0:
+            locs = {k: v for k, v in WISDOMS_SPECIFIC.items() if k == BOH_StrEnums.TreeOfWisdoms_Root}
+        else:
+            dic = WISDOMS_SPECIFIC if world.options.insanitree.split_paths else WISDOMS_TIERS
+            locs = {k: v for k, v in dic.items() if int_from_roman_in_wt_node(k) == i}
+        loc_type_str = world.options.insanitree.location_progress_types[i]
+        loc_type = LocationProgressType(int(loc_type_str))
+        for k, v in locs.items():
+            wt.locations.append(BOHLocation(world.player, k, v, wt))
+            wt.locations[-1].progress_type = loc_type
+
 
 def create_locations(world: BOHWorld) -> None:
     menu = world.get_region("Menu")
@@ -141,8 +148,8 @@ def create_locations(world: BOHWorld) -> None:
     if world.options.memorinsanity.is_enabled:
         create_locations_memorinsanity(world)
 
-
-    create_locations_wisdoms(world)
+    if world.options.insanitree:
+        create_locations_wisdoms(world)
 
     if False:
         for unlockname, apid in TERRAINS_SPECIFIC.items():

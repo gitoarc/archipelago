@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 
 from . import jsondump
-from .functions import slice_off_category_from_int, starts_vowel
+from .functions import slice_off_category_from_int, starts_vowel, to_roman
 
 
 def __process_label_memory(s: str):
@@ -63,18 +63,20 @@ TERRAINS_PILE = {f"Unlock {i} terrain" if i == 1 else f"Unlock {i} terrains"
                  : int(f"30{__last_subid_of(TERRAINS_SPECIFIC) + i}")
                  for i in range(1, 111)}  # 110 bc ocean doesnt count
 ################
-WISDOMS_SPECIFIC = {(
-    f"Root your Journal into The Tree of Wisdoms" if "Root" in o.Label else f"Commit a skill to '{o.Label}' in The Tree of Wisdoms"): int(
-    f"40{i + 1}")
-    for i, o in enumerate(jsondump.wisdomtree)}
-WISDOMS_TIERS = {f"Reach Tier {t + 1} in The Tree of Wisdoms - Reward {r}"
-                 : int(f"40{__last_subid_of(WISDOMS_SPECIFIC) + t * 9 + r}")
-                 for t in range(0, 9) for r in range(1,
-                                                     1 + 9)}  # this allows more control over the distribution; You could shift the whole tree down to just T2 rewards but 4 items each.
+WISDOMS_SPECIFIC = {o.Label: int(f"40{i + 1}")
+                    for i, o in enumerate(jsondump.wisdomtree)}
+#WISDOMS_TIERS = {f"Reach Tier {t + 1} in The Tree of Wisdoms - Reward {r}"
+#                 : int(f"40{__last_subid_of(WISDOMS_SPECIFIC) + t * 9 + r}")
+#                 for t in range(0, 9) for r in range(1, 1 + 9)}
+# Allows more control over the distribution; You could shift the whole tree down to just T2 rewards but 4 items each.
+WISDOMS_TIERS = {f"Commit a skill to any Tier {to_roman(t)} Wisdom"
+                 : int(f"40{__last_subid_of(WISDOMS_SPECIFIC) + t}")
+                 for t in range(1, 1 + 9)}
+
 WISDOMS_PILE = {
-    f"Commit {n + 1} skill to The Tree of Wisdoms - Reward {r}" if n == 0 else f"Commit {n + 1} skills to The Tree of Wisdoms - Reward {r}"
-    : int(f"40{__last_subid_of(WISDOMS_TIERS) + n * 2 + r}")
-    for n in range(0, 81) for r in range(1, 1 + 2)}  # a 81*9 combo might be too much? For now, limit to max 2
+    f"Commit {n} skill to The Tree of Wisdoms" if n == 1 else f"Commit {n} skills to The Tree of Wisdoms"
+    : int(f"40{__last_subid_of(WISDOMS_TIERS) + n}")
+    for n in range(1, 1 + 81)}
 ##############
 BOOKS_SPECIFIC = {f"Master '{o.Label}'": int(f"50{i + 1}")
                   for i, o in enumerate(jsondump.books)}
